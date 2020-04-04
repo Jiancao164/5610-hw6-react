@@ -1,8 +1,8 @@
 const widgets = [
-    // {_id: "123", title: "Widget 12", type: "HEADING"}
-    // {_id: "234", title: "Widget 23", type: "PARAGRAPH"},
-    // {_id: "345", title: "Widget 34", type: "HEADING"},
-    // {_id: "456", title: "Widget 45", type: "PARAGRAPH"}
+    // {id: "123", title: "Widget 12", type: "HEADING"},
+    // {id: "234", title: "Widget 23", type: "PARAGRAPH"},
+    // {id: "345", title: "Widget 34", type: "HEADING"},
+    // {id: "456", title: "Widget 45", type: "PARAGRAPH"}
 ]
 
 const widgetReducer = (state = {

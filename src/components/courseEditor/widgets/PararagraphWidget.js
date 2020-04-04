@@ -1,4 +1,5 @@
 import React from "react";
+import {findWidgetsForTopic} from "../../../services/WidgetService";
 
 class ParagraphWidget extends React.Component {
     state = {
@@ -7,7 +8,8 @@ class ParagraphWidget extends React.Component {
         value: this.props.widget.type,
         preview: false,
         text: this.props.widget.text,
-        textItems: []
+        newOrder: 0,
+        theOtherWidget: this.props.widget,
     };
 
     changePreview = () => {
@@ -24,14 +26,37 @@ class ParagraphWidget extends React.Component {
         }
     }
 
+
+    deleteWidgetAndChangeOrder = async (widgetId) => {
+        let c = this.props.widget.position;
+        this.props.deleteWidget(widgetId);
+        this.props.widgets.map(widget => widget.position > c? this.props.updateWidget(widget.id, {...widget, position : widget.position - 1}) : widget);
+    };
+    changePositionUp = (widgetId) => {
+        let c = this.props.widget.position;
+        let widget = this.props.widget;
+        if (widget.position !== 0) {
+            this.props.updateWidget(widgetId, {...widget, position : c - 1})
+            this.props.widgets.map(widget => widget.position === c - 1 && widget.id !== widgetId? this.props.updateWidget(widget.id, {...widget, position : widget.position + 1}) : widget);
+        }
+    };
+    changePositionDown = async (widgetId) => {
+        let as = await findWidgetsForTopic(this.props.topicId);
+        let c = this.props.widget.position;
+        let widget = this.props.widget;
+        if (widget.position !== as.length - 1) {
+            this.props.updateWidget(widgetId, {...widget, position : c + 1})
+            this.props.widgets.map(widget => widget.position === c + 1 && widget.id !== widgetId? this.props.updateWidget(widget.id, {...widget, position : widget.position - 1}) : widget);
+        }
+    };
+
     render () {
         return(
             <div>
                 {
                     !this.state.editing &&
                     <div>
-                        {console.log(this.props.editingWidgetId)}
-                        {<h4>{this.props.widget.title}</h4>}
+                        {this.props.widget.text}
                     </div>
                 }
                 {
@@ -42,92 +67,96 @@ class ParagraphWidget extends React.Component {
                                 onClick={this.changePreview}
                                 className="fas fa-toggle-on float-right fa-2x">Preview</i>}
                             {!this.state.preview && <i
-                                onClick={() => {this.changePreview();
-                                    this.setState({
-                                        textItems: this.state.text.split("\n")
-                                    })}}
+                                onClick={this.changePreview}
                                 className="fas fa-toggle-off float-right fa-2x">Preview</i>}
                             <button onClick={() =>
                             {
-                                console.log(this.props.editingWidgetId)
-                                this.props.saveWidget(this.state.widget.id, this.state.widget)
-                                console.log(this.props.editingWidgetId)
+                                this.props.saveWidget(this.state.widget.id, {...this.props.widget, text : this.state.text, size: this.state.widget.size})
                             }}
-                                    className={"float-right"}>save</button>
+                                    className={"btn btn-success float-right"}>save</button>
                             <br/>
                         </div>
                         <br/>
-
                         {!this.state.preview &&
-                            <div>
-                                <div className={"row"}>
-                                    <div className={"col-9"}>
-                                        <h3>Paragraph widget</h3>
-                                    </div>
-                                    <div className={"col-3 row float-right"}>
-                                        <button><i className="fas fa-arrow-up"/></button>
-                                        <button><i className="fas fa-arrow-down"/></button>
-                                        <select id={"type"}
-                                                onChange={(e) => {
-                                                    const newType = e.target.value;
-                                                    this.setState(prevState => {
-                                                        prevState.widget.type = newType
-                                                        return prevState
-                                                    })
-                                                    this.props.updateWidget(this.state.widget.id, this.state.widget);
-                                                }}
-                                                value={this.props.widget.type}
-                                        >
-                                            <option value="HEADING">Heading</option>
-                                            <option value="PARAGRAPH">Paragraph</option>
-                                            <option value="LIST">List</option>
-                                            <option value="IMAGE">Image</option>
-                                        </select>
-                                        <i onClick={() => this.props.deleteWidget(this.props.widget.id)} className="fas fa-window-close fa-3x"/>
-                                        <br/>
-                                    </div>
+                        <div>
+                            <div className={"row"}>
+
+                                <div className={"col-8"}>
+                                    <h3>Paragraph widget</h3>
                                 </div>
+                                <div className={"col-4 row float-right"}>
+                                    <button
+                                        onClick={() => this.changePositionUp(this.props.widget.id)}
+                                        className={"btn btn-warning btn-sm"}>
+                                        <i className="fas fa-arrow-up"/>
+                                    </button>
 
-                                <div>
-                            <textarea className="form-control"
-                                      placeholder={"Paragraph text"}
-                                      onChange={(e) => {
-                                          this.setState({
-                                              text: e.target.value
-                                          })
-                                      }
-                                      }
-                                      value={this.state.text}
-                                      aria-label="Text input with segmented dropdown button"/>
+                                    <button
+                                        onClick={() => this.changePositionDown(this.props.widget.id)}
+                                        className={"btn btn-warning btn-sm"}>
+                                        <i className="fas fa-arrow-down"/></button>
+
+                                    <select className={"custom-select col-5"} id={"type"}
+                                            onChange={(e) => {
+                                                const newType = e.target.value;
+                                                this.setState(prevState => {
+                                                    prevState.widget.type = newType;
+                                                    this.props.updateWidget(this.state.widget.id, this.state.widget)
+                                                    return prevState
+                                                })
+
+                                            }}
+                                            value={this.state.widget.type}
+                                    >
+                                        <option value="HEADING">Heading</option>
+                                        <option value="PARAGRAPH">Paragraph</option>
+                                        <option value="LIST">List</option>
+                                        <option value="IMAGE">Image</option>
+                                    </select>
+
+                                    <button onClick={() => this.deleteWidgetAndChangeOrder(this.props.widget.id)}
+                                            className={"btn btn-danger btn-sm"}>
+                                        <i className="fas fa-times"/>
+                                    </button>
+
                                     <br/>
-
-
-                                    <input
-                                        type="text" className="form-control"
-                                        placeholder={"Widget name"}
-                                        aria-label="Text input with segmented dropdown button"
-
-                                        onChange={(e) => {
-                                            const newTitle = e.target.value;
-                                            this.setState(prevState => {
-                                                prevState.widget.title = newTitle;
-                                                return prevState
-                                            })
-                                        }}
-                                        value={this.state.widget.title}/>
                                 </div>
                             </div>
+
+                            <div>
+                                <textarea
+                                    className="form-control"
+                                       placeholder={"Paragraph text"}
+                                       onChange={(e) => {
+                                           this.setState({
+                                               text: e.target.value
+                                           })
+                                       }
+                                       }
+                                       value={this.state.text}
+                                       aria-label="Text input with segmented dropdown button"/>
+                                <br/>
+
+                                <input
+                                    type="text" className="form-control"
+                                    placeholder={"Widget name"}
+                                    aria-label="Text input with segmented dropdown button"
+
+                                    onChange={(e) => {
+                                        const newTitle = e.target.value;
+                                        this.setState(prevState => {
+                                            prevState.widget.title = newTitle;
+                                            return prevState
+                                        })
+                                    }}
+                                    value={this.state.widget.title}/>
+                            </div>
+                        </div>
                         }
                         {this.state.preview &&
                         <div>
-                            {<h3>{this.state.widget.title}</h3>}
-                            {
-                                <ul>
-                                    {this.state.textItems.map(item => (
-                                        <li key={new Date().getTime() + item}>{item}</li>
-                                    ))}
-                                </ul>
-                            }
+                            <hr/>
+                            {this.state.text}
                         </div>
                         }
                     </div>

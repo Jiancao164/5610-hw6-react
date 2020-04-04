@@ -1,9 +1,12 @@
-export const findWidgetsForTopic = (tid) =>
-    fetch(`http://localhost:8080/api/topics/${tid}/widgets/`)
-        .then(response => response.json());
+import {TOPICS_WIDGETS_API_URL, WIDGETS_API_URL} from "../common/constants";
 
+export const findWidgetsForTopic = (tid) =>
+    fetch(TOPICS_WIDGETS_API_URL(tid))
+        .then(response => response.json());
+//https://murmuring-inlet-83447.herokuapp.com
+//http://localhost:8080
 export const updateWidget = (wid, widget) =>
-    fetch(`http://localhost:8080/api/widgets/${wid}`, {
+    fetch(`${WIDGETS_API_URL}/${wid}`, {
         method: "PUT",
         body: JSON.stringify(widget),
         headers: {
@@ -11,18 +14,15 @@ export const updateWidget = (wid, widget) =>
         }
     }).then(response => response.json());
 
-export const findAllWidgets = () =>
-    fetch("http://localhost:8080/widgets")
-        .then(response => response.json())
 
 export const deleteWidget = (widgetId) =>
-    fetch(`http://localhost:8080/api/widgets/${widgetId}`, {
+    fetch(`${WIDGETS_API_URL}/${widgetId}`, {
         method: "DELETE"
     }).then(response => response.json());
 
 
 export const createWidget = (tid, widget) =>
-    fetch(`http://localhost:8080/api/topics/${tid}/widgets`, {
+    fetch(TOPICS_WIDGETS_API_URL(tid), {
         method: "POST",
         body: JSON.stringify(widget),
         headers: {

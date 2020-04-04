@@ -1,4 +1,5 @@
 import React from "react";
+import {findWidgetsForTopic} from "../../../services/WidgetService";
 
 class ImageWidget extends React.Component {
     state = {
@@ -6,13 +7,10 @@ class ImageWidget extends React.Component {
         widget: this.props.widget,
         value: this.props.widget.type,
         preview: false,
-        image: this.props.widget.src
-    };
-
-    showImage = (url) => {
-        this.setState({
-            image: url
-        })
+        text: this.props.widget.text,
+        newOrder: 0,
+        theOtherWidget: this.props.widget,
+        src : this.props.widget.src
     };
 
     changePreview = () => {
@@ -29,14 +27,37 @@ class ImageWidget extends React.Component {
         }
     }
 
+
+    deleteWidgetAndChangeOrder = async (widgetId) => {
+        let c = this.props.widget.order;
+        this.props.deleteWidget(widgetId);
+        this.props.widgets.map(widget => widget.order > c? this.props.updateWidget(widget.id, {...widget, order : widget.order - 1}) : widget);
+    };
+    changePositionUp = (widgetId) => {
+        let c = this.props.widget.order;
+        let widget = this.props.widget;
+        if (widget.order !== 0) {
+            this.props.updateWidget(widgetId, {...widget, order : c - 1});
+            this.props.widgets.map(widget => widget.order === c - 1 && widget.id !== widgetId? this.props.updateWidget(widget.id, {...widget, order : widget.order + 1}) : widget);
+        }
+    };
+    changePositionDown = async (widgetId) => {
+        let as = await findWidgetsForTopic(this.props.topicId);
+        let c = this.props.widget.order;
+        let widget = this.props.widget;
+        if (widget.order !== as.length - 1) {
+            this.props.updateWidget(widgetId, {...widget, order : c + 1})
+            this.props.widgets.map(widget => widget.order === c + 1 && widget.id !== widgetId? this.props.updateWidget(widget.id, {...widget, order : widget.order - 1}) : widget);
+        }
+    };
+
     render () {
         return(
             <div>
                 {
                     !this.state.editing &&
-
                     <div>
-                        {<h3>{this.props.widget.title}</h3>}
+                        <img src = {this.state.src} />
                     </div>
                 }
                 {
@@ -47,29 +68,36 @@ class ImageWidget extends React.Component {
                                 onClick={this.changePreview}
                                 className="fas fa-toggle-on float-right fa-2x">Preview</i>}
                             {!this.state.preview && <i
-                                onClick={() => {this.changePreview();
-                                    this.showImage(this.state.image)
-                                }}
+                                onClick={this.changePreview}
                                 className="fas fa-toggle-off float-right fa-2x">Preview</i>}
                             <button onClick={() =>
                             {
-                                this.props.saveWidget(this.state.widget.id, this.state.widget)
+                                this.props.saveWidget(this.state.widget.id, {...this.props.widget, text : this.state.text, src: this.state.src})
                             }}
-                                    className={"float-right"}>save</button>
+                                    className={"btn btn-success float-right"}>save</button>
                             <br/>
                         </div>
                         <br/>
                         {!this.state.preview &&
                         <div>
                             <div className={"row"}>
-                                <div className={"col-9"}>
+
+                                <div className={"col-8"}>
                                     <h3>Image widget</h3>
                                 </div>
-                                <div className={"col-3 row float-right"}>
-                                    <button><i className="fas fa-arrow-up"/></button>
-                                    <button><i className="fas fa-arrow-down"/></button>
-                                    {console.log(this.state.widget)}
-                                    <select id={"type"}
+                                <div className={"col-4 row float-right"}>
+                                    <button
+                                        onClick={() => this.changePositionUp(this.props.widget.id)}
+                                        className={"btn btn-warning btn-sm"}>
+                                        <i className="fas fa-arrow-up"/>
+                                    </button>
+
+                                    <button
+                                        onClick={() => this.changePositionDown(this.props.widget.id)}
+                                        className={"btn btn-warning btn-sm"}>
+                                        <i className="fas fa-arrow-down"/></button>
+
+                                    <select className={"custom-select col-5"} id={"type"}
                                             onChange={(e) => {
                                                 const newType = e.target.value;
                                                 this.setState(prevState => {
@@ -77,6 +105,7 @@ class ImageWidget extends React.Component {
                                                     this.props.updateWidget(this.state.widget.id, this.state.widget)
                                                     return prevState
                                                 })
+
                                             }}
                                             value={this.state.widget.type}
                                     >
@@ -85,27 +114,27 @@ class ImageWidget extends React.Component {
                                         <option value="LIST">List</option>
                                         <option value="IMAGE">Image</option>
                                     </select>
-                                    <i onClick={() => this.props.deleteWidget(this.props.widget.id)} className="fas fa-window-close fa-3x"/>
+
+                                    <button onClick={() => this.deleteWidgetAndChangeOrder(this.props.widget.id)}
+                                        className={"btn btn-danger btn-sm"}>
+                                        <i className="fas fa-times"/>
+                                    </button>
+
                                     <br/>
                                 </div>
                             </div>
 
                             <div>
-                                <input
-                                    type={"text"}
-                                    className="form-control "
-                                    placeholder={"Image text"}
-                                    aria-label="Text input with segmented dropdown button"
-                                    onChange={(e) => {
-                                        const newSrc = e.target.value;
-                                        this.setState(prevState => {
-                                        prevState.widget.src = newSrc;
-                                        return prevState
-                                        })
-                                        }
-                                    }
-                                    value={this.state.widget.src}
-                                />
+                                <input className="form-control"
+                                       placeholder={"Image URL"}
+                                       onChange={(e) => {
+                                           this.setState({
+                                               src: e.target.value
+                                           })
+                                       }
+                                       }
+                                       value={this.state.src}
+                                       aria-label="Text input with segmented dropdown button"/>
                                 <br/>
                                 <input
                                     type="text" className="form-control"
@@ -125,8 +154,8 @@ class ImageWidget extends React.Component {
                         }
                         {this.state.preview &&
                         <div>
-                            <h3>Preview</h3>
-                            <img src = {this.state.widget.src} />
+                            <hr/>
+                            <img src = {this.state.src} />
                         </div>
                         }
                     </div>
@@ -135,5 +164,4 @@ class ImageWidget extends React.Component {
         )
     }
 }
-
 export default ImageWidget
